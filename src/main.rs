@@ -1,5 +1,7 @@
+use dotenv::dotenv;
 use rand::{thread_rng, Rng};
 use reqwest;
+use std::env;
 use std::fs::File;
 use std::io::Write;
 
@@ -8,11 +10,14 @@ use std::io::Write;
 // LGTM画像をランダムにダウンロードする
 #[tokio::main]
 async fn main() {
+    // .envの値を読み込む
+    dotenv().ok();
+
     let mut rng = thread_rng();
     // ランダムな整数を生成
-    let rand_num: u32 = rng.gen_range(130000..150000);
+    let rand_num: u32 = rng.gen_range(140000..150000);
     // リクエストするURLを定義
-    let req_url = format!("https://image.lgtmoon.dev/{}", rand_num);
+    let req_url = format!("https://image.lgtmoon.dev/{}", 144444);
     println!("Request url is {}", req_url);
     let res = match reqwest::get(req_url).await {
         Ok(response) => {
@@ -31,13 +36,19 @@ async fn main() {
         let image_bytes = res.bytes().await.expect("Error! to bytes");
         let mut buffer = File::create("lgtm.jpg").expect("Error! file create");
 
-        // TODO: 解読
-        let mut pos = 0;
-        while pos < image_bytes.len() {
-            let bytes_written = buffer.write(&image_bytes[pos..]).expect("Error!");
-            pos += bytes_written;
-        }
+        buffer.write_all(&image_bytes).expect("Write byte error!");
     } else if status_code == 403 {
-        panic!("Request Error!");
+        panic!("LTGMOON Request Error!");
     }
+
+    // PixabayAPIから画像を取得
+    let pixabay_api_key = env::var("PIXABAY_API_KEY").expect("Enviroment Variables Error!");
+    let pixabay_url = format!(
+        "https://pixabay.com/api/?key={}&q={}+{}&image_type=photo",
+        pixabay_api_key, "cat", "dog"
+    );
+    let pixabay_res = reqwest::get(pixabay_url)
+        .await
+        .expect("Pixabay request error");
+    println!("pixabay res is : {:?}", pixabay_res.text().await);
 }
