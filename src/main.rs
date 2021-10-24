@@ -7,6 +7,11 @@ async fn main() {
     let rand_num: u32 = rng.gen_range(130000..150000);
     let req_url = format!("https://image.lgtmoon.dev/{}", rand_num);
     println!("request url is {}", req_url);
-    let res = reqwest::get(req_url).await;
+    let res = match reqwest::get(req_url).await {
+        Ok(response) => response,
+        Err(_e) => {
+            panic!("Error!")
+        }
+    };
     println!("{:?}", res);
 }
