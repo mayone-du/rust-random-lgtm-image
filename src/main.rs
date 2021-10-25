@@ -55,7 +55,18 @@ async fn main() {
         .await
         .expect("to text error");
 
+    // 検索結果の画像URLを取得
     let value: value::Value = serde_json::from_str(&pixabay_res_text).expect("");
-
-    println!("\n{:?}\n", value);
+    let hits = value
+        .get("hits")
+        .expect("get pixabay error")
+        .as_array()
+        .expect("as array error");
+    let mut i = 0;
+    let mut images: Vec<&serde_json::Value> = vec![];
+    while i < hits.len() {
+        images.push(hits[i].get("webformatURL").expect("webformatURL is None"));
+        i = i + 1;
+    }
+    println!("{:?}", images);
 }
