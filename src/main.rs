@@ -1,6 +1,7 @@
 use dotenv::dotenv;
 use rand::{thread_rng, Rng};
 use reqwest;
+use serde_json::value;
 use std::env;
 use std::fs::File;
 use std::io::Write;
@@ -17,7 +18,7 @@ async fn main() {
     // ランダムな整数を生成
     let rand_num: u32 = rng.gen_range(140000..150000);
     // リクエストするURLを定義
-    let req_url = format!("https://image.lgtmoon.dev/{}", 144444);
+    let req_url = format!("https://image.lgtmoon.dev/{}", rand_num);
     println!("Request url is {}", req_url);
     let res = match reqwest::get(req_url).await {
         Ok(response) => {
@@ -41,14 +42,20 @@ async fn main() {
         panic!("LTGMOON Request Error!");
     }
 
-    // PixabayAPIから画像を取得
+    // PixabayAPIから画像検索結果を取得
     let pixabay_api_key = env::var("PIXABAY_API_KEY").expect("Enviroment Variables Error!");
     let pixabay_url = format!(
         "https://pixabay.com/api/?key={}&q={}+{}&image_type=photo",
         pixabay_api_key, "cat", "dog"
     );
-    let pixabay_res = reqwest::get(pixabay_url)
+    let pixabay_res_text = reqwest::get(pixabay_url)
         .await
-        .expect("Pixabay request error");
-    println!("pixabay res is : {:?}", pixabay_res.text().await);
+        .expect("Pixabay request error")
+        .text()
+        .await
+        .expect("to text error");
+
+    let value: value::Value = serde_json::from_str(&pixabay_res_text).expect("");
+
+    println!("\n{:?}\n", value);
 }

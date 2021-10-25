@@ -632,6 +632,7 @@ dependencies = [
  "dotenv",
  "rand",
  "reqwest",
+ "serde_json",
  "tokio",
 ]
 
