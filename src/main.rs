@@ -1,12 +1,11 @@
 use dotenv::dotenv;
-use image::Rgba;
+use image::{GenericImageView, Rgba};
 use imageproc::drawing::draw_text_mut;
 use rand::{thread_rng, Rng};
 use reqwest;
 use rusttype::{Font, Scale};
 use serde_json::value;
 use std::env;
-use std::env::args;
 use std::fs::File;
 use std::io::Write;
 use std::thread;
@@ -57,7 +56,7 @@ async fn get_pixabay_image() {
     // TODO: 単語の指定
     let pixabay_url = format!(
         "https://pixabay.com/api/?key={}&q={}+{}&image_type=photo",
-        pixabay_api_key, "cat", "cute"
+        pixabay_api_key, "cat", "money"
     );
     let pixabay_res_text = reqwest::get(pixabay_url)
         .await
@@ -104,28 +103,36 @@ async fn get_pixabay_image() {
         Ok(image) => image,
         Err(err) => panic!("画像を読み取れませんでした。{:?}", err),
     };
+    let height = image.height();
+    let width = image.width();
     // 描画するためのフォントを取得
     let font = Vec::from(include_bytes!("../assets/font/orkney-bold.ttf") as &[u8]);
     let font = Font::try_from_vec(font).unwrap();
 
-    // 文字のサイズを決定
-    let size = 100.0;
-    let scale = Scale { x: size, y: size };
+    // 文字のサイズは画像の横幅に応じて決定
+    // 4文字だから、0.8分になるため、あとで横丁製のために0.1分引く
+    let (float_size, font_size) = (width as f32 * 0.2, (width as f32 * 0.2).ceil() as u32);
+    let scale = Scale {
+        x: float_size,
+        y: float_size,
+    };
 
-    // コマンド実行時の引数で文字列を受け取り、その文字を画像に描画する
-    let args: Vec<String> = args().collect();
-    let text = &args[1];
+    // xは画像の横幅を2で割り、文字サイズの2文字分更に引く
+    let (position_x, position_y) = (
+        (width / 2 - font_size * 2 / 2 - (font_size as f32 * 0.1) as u32),
+        (height / 2 - font_size / 2),
+    );
 
     // テキストを画像に描画
     draw_text_mut(
         &mut image,
         Rgba([255u8, 255u8, 255u8, 255u8]),
         // Rgba([0u8, 0u8, 0u8, 0u8]),
-        200,
-        200,
+        position_x,
+        position_y,
         scale,
         &font,
-        text,
+        "LGTM",
     );
 
     // 日付をファイル名にして画像を保存
