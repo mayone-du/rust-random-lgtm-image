@@ -15,7 +15,7 @@ pub async fn get_pixabay_image() {
   // TODO: 単語の指定
   let pixabay_url = format!(
     "https://pixabay.com/api/?key={}&q={}+{}&image_type=photo",
-    pixabay_api_key, "cat", "money"
+    pixabay_api_key, "cat", "fun"
   );
   let pixabay_res_text = reqwest::get(pixabay_url)
     .await
@@ -68,7 +68,7 @@ pub async fn get_pixabay_image() {
   let font = Font::try_from_vec(font).unwrap();
 
   // 文字のサイズは画像の横幅に応じて決定
-  // 4文字だから、0.8分になるため、あとで横丁製のために0.1分引く
+  // 4文字だから、0.8分になるため、あとで横調整のために0.1分引く
   let (float_size, font_size) = (width as f32 * 0.2, (width as f32 * 0.2).ceil() as u32);
   let scale = Scale {
     x: float_size,
