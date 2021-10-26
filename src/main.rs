@@ -1,8 +1,12 @@
 use dotenv::dotenv;
+use image::Rgba;
+use imageproc::drawing::draw_text_mut;
 use rand::{thread_rng, Rng};
 use reqwest;
+use rusttype::{Font, Scale};
 use serde_json::value;
 use std::env;
+use std::env::args;
 use std::fs::File;
 use std::io::Write;
 use std::thread;
@@ -17,14 +21,10 @@ async fn main() {
     let rand_num: u32 = rng.gen_range(140000..150000);
     // リクエストするURLを定義
     // let req_url = format!("https://image.lgtmoon.dev/{}", rand_num);
-    let req_url = format!("https://image.lgtmoon.dev/{}", 144444);
-    // let req_url = "https://pixabay.com/get/g69c5561f84596ea414033342e630a1347b2704d74efc5eb74836e79f6e38a4b46ba7c92f061da4dd6509fece0393e032ac6c33419d1a69f344831dbf33462eef_640.jpg";
-    println!("Request url is {}", req_url);
+    let req_url = format!("https://image.lgtmoon.dev/{}", 144447);
+    println!("\nRequest url is {}\n", req_url);
     let res = match reqwest::get(req_url).await {
-        Ok(response) => {
-            println!("OK. Response is : {:?}", response);
-            response
-        }
+        Ok(response) => response,
         Err(_e) => {
             panic!("Error!")
         }
@@ -34,19 +34,19 @@ async fn main() {
     let status_code = res.status();
 
     if status_code == 200 {
+        // レスポンスをbyteとして保存し、新しいファイルに書き込む
         let image_bytes = res.bytes().await.expect("Error! to bytes");
         let mut buffer = File::create("lgtm.jpg").expect("Error! file create");
-
         buffer.write_all(&image_bytes).expect("Write byte error!");
     } else if status_code == 403 {
         panic!("LTGMOON Request Error!");
     }
 
+    // 別スレッドで非同期実行
     let handle = thread::spawn(|| async {
         get_pixabay_image().await;
     });
     handle.join().expect("join error").await;
-    // get_pixabay_image().await;
 }
 
 async fn get_pixabay_image() {
@@ -54,9 +54,10 @@ async fn get_pixabay_image() {
     dotenv().ok();
     // PixabayAPIから画像検索結果を取得
     let pixabay_api_key = env::var("PIXABAY_API_KEY").expect("Enviroment Variables Error!");
+    // TODO: 単語の指定
     let pixabay_url = format!(
         "https://pixabay.com/api/?key={}&q={}+{}&image_type=photo",
-        pixabay_api_key, "cat", "dog"
+        pixabay_api_key, "cat", "cute"
     );
     let pixabay_res_text = reqwest::get(pixabay_url)
         .await
@@ -79,27 +80,59 @@ async fn get_pixabay_image() {
         i = i + 1;
     }
 
-    println!("\nimages is {:?}\n", images);
-
     let val = &images[0].to_string();
     let pixabay_req_url = rem_first_and_last(val);
 
     let res = match reqwest::get(pixabay_req_url).await {
-        Ok(response) => {
-            println!("OK. Response is : {:?}", response);
-            response
-        }
+        Ok(response) => response,
         Err(_e) => {
             panic!("Error!")
         }
     };
 
-    println!(
-        "\n\n{:?}",
-        reqwest::get(pixabay_req_url).await.expect("error").status()
+    let status = reqwest::get(pixabay_req_url).await.expect("error").status();
+
+    println!("\n{}\n", status);
+    let image_bytes = res.bytes().await.expect("byte error");
+    let mut buffer = File::create("pixabay.jpg").expect("Error! file create");
+    buffer.write_all(&image_bytes).expect("file write error");
+
+    // テキストを描画
+
+    // 背景用画像を取得
+    let mut image = match image::open("pixabay.jpg") {
+        Ok(image) => image,
+        Err(err) => panic!("画像を読み取れませんでした。{:?}", err),
+    };
+    // 描画するためのフォントを取得
+    let font = Vec::from(include_bytes!("../assets/font/orkney-bold.ttf") as &[u8]);
+    let font = Font::try_from_vec(font).unwrap();
+
+    // 文字のサイズを決定
+    let size = 100.0;
+    let scale = Scale { x: size, y: size };
+
+    // コマンド実行時の引数で文字列を受け取り、その文字を画像に描画する
+    let args: Vec<String> = args().collect();
+    let text = &args[1];
+
+    // テキストを画像に描画
+    draw_text_mut(
+        &mut image,
+        Rgba([255u8, 255u8, 255u8, 255u8]),
+        // Rgba([0u8, 0u8, 0u8, 0u8]),
+        200,
+        200,
+        scale,
+        &font,
+        text,
     );
 
-    let image_bytes = res.bytes();
+    // 日付をファイル名にして画像を保存
+    let save_path = format!("generated/pixabay.jpg");
+
+    // 画像を保存
+    image.save(save_path).unwrap();
 }
 
 fn rem_first_and_last(value: &str) -> &str {

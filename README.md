@@ -5,3 +5,8 @@
 - LGTMOON
 - wordsapi.com
 - Pixabay
+
+## セットアップ
+
+- フォントのインストール
+- Pixabay API Key の取得
