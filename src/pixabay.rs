@@ -11,7 +11,7 @@ pub async fn get_pixabay_image() {
   // .envの値を読み込む
   dotenv().ok();
   // PixabayAPIから画像検索結果を取得
-  let pixabay_api_key = env::var("PIXABAY_API_KEY").expect("Enviroment Variables Error!");
+  let pixabay_api_key = env::var("PIXABAY_API_KEY").unwrap();
   // TODO: 単語の指定
   let pixabay_url = format!(
     "https://pixabay.com/api/?key={}&q={}+{}&image_type=photo",
@@ -19,22 +19,18 @@ pub async fn get_pixabay_image() {
   );
   let pixabay_res_text = reqwest::get(pixabay_url)
     .await
-    .expect("Pixabay request error")
+    .unwrap()
     .text()
     .await
-    .expect("to text error");
+    .unwrap();
 
   // 検索結果の画像URLを取得
-  let value: value::Value = serde_json::from_str(&pixabay_res_text).expect("");
-  let hits = value
-    .get("hits")
-    .expect("get pixabay error")
-    .as_array()
-    .expect("as array error");
+  let value: value::Value = serde_json::from_str(&pixabay_res_text).unwrap();
+  let hits = value.get("hits").unwrap().as_array().unwrap();
   let mut i = 0;
   let mut images: Vec<&serde_json::Value> = vec![];
   while i < hits.len() {
-    images.push(hits[i].get("webformatURL").expect("webformatURL is None"));
+    images.push(hits[i].get("webformatURL").unwrap());
     i = i + 1;
   }
 
@@ -48,12 +44,12 @@ pub async fn get_pixabay_image() {
     }
   };
 
-  let status = reqwest::get(pixabay_req_url).await.expect("error").status();
+  let status = reqwest::get(pixabay_req_url).await.unwrap().status();
 
   println!("\n{}\n", status);
-  let image_bytes = res.bytes().await.expect("byte error");
-  let mut buffer = File::create("pixabay.jpg").expect("Error! file create");
-  buffer.write_all(&image_bytes).expect("file write error");
+  let image_bytes = res.bytes().await.unwrap();
+  let mut buffer = File::create("pixabay.jpg").unwrap();
+  buffer.write_all(&image_bytes).unwrap();
 
   // テキストを描画
 
@@ -100,6 +96,7 @@ pub async fn get_pixabay_image() {
   image.save(save_path).unwrap();
 }
 
+// 文字列をchar型に分解して最初と最後の文字列を削除
 fn rem_first_and_last(value: &str) -> &str {
   let mut chars = value.chars();
   chars.next();
