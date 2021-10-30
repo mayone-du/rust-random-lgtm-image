@@ -10,13 +10,13 @@ use std::io::Write;
 pub async fn get_pixabay_image() {
   // .envの値を読み込む
   dotenv().ok();
-  // PixabayAPIから画像検索結果を取得
   let pixabay_api_key = env::var("PIXABAY_API_KEY").unwrap();
-  // TODO: 単語の指定
+
   let pixabay_url = format!(
-    "https://pixabay.com/api/?key={}&q={}+{}&image_type=photo",
-    pixabay_api_key, "cat", "fun"
+    "https://pixabay.com/api/?key={}&q={}&image_type=photo",
+    pixabay_api_key, "",
   );
+  // PixabayAPIから画像検索結果を取得
   let pixabay_res_text = reqwest::get(pixabay_url)
     .await
     .unwrap()
@@ -34,8 +34,9 @@ pub async fn get_pixabay_image() {
     i = i + 1;
   }
 
-  let val = &images[0].to_string();
-  let pixabay_req_url = rem_first_and_last(val);
+  // 画像URLの配列の一個目を取得し、画像を取得
+  let img_url = &images[0].to_string();
+  let pixabay_req_url = rem_first_and_last(img_url);
 
   let res = match reqwest::get(pixabay_req_url).await {
     Ok(response) => response,
@@ -44,33 +45,38 @@ pub async fn get_pixabay_image() {
     }
   };
 
+  // ステータスコードが200でない場合は処理を終了
   let status = reqwest::get(pixabay_req_url).await.unwrap().status();
-
-  println!("\n{}\n", status);
+  if status != 200 {
+    return;
+  }
   let image_bytes = res.bytes().await.unwrap();
   let mut buffer = File::create("pixabay.jpg").unwrap();
   buffer.write_all(&image_bytes).unwrap();
-
-  // テキストを描画
 
   // 背景用画像を取得
   let mut image = match image::open("pixabay.jpg") {
     Ok(image) => image,
     Err(err) => panic!("画像を読み取れませんでした。{:?}", err),
   };
+  // 画像の横幅、縦幅を取得
   let (width, height) = image.dimensions();
   // 描画するためのフォントを取得
   let font = Vec::from(include_bytes!("../assets/font/orkney-bold.ttf") as &[u8]);
   let font = Font::try_from_vec(font).unwrap();
 
   // 文字のサイズは画像の横幅に応じて決定
-  // 4文字だから、0.8分になるため、あとで横調整のために0.1分引く
-  let (float_size, font_size) = (width as f32 * 0.2, (width as f32 * 0.2).ceil() as u32);
+  let scale_size = width as f32 * 0.2;
   let scale = Scale {
-    x: float_size,
-    y: float_size,
+    x: scale_size,
+    y: scale_size,
   };
 
+  // 一文字の大きさは横幅*0.2
+  let font_size = (width as f32 * 0.2).ceil() as u32;
+
+  // LGTMの4文字だから、0.8分になるため、あとで横調整のために0.1分引く
+  // |0.1|0.8|0.1|のような横幅のイメージ
   // xは画像の横幅を2で割り、文字サイズの2文字分更に引く
   let (position_x, position_y) = (
     (width / 2 - font_size * 2 / 2 - (font_size as f32 * 0.1) as u32),
@@ -81,7 +87,6 @@ pub async fn get_pixabay_image() {
   draw_text_mut(
     &mut image,
     Rgba([255u8, 255u8, 255u8, 255u8]),
-    // Rgba([0u8, 0u8, 0u8, 0u8]),
     position_x,
     position_y,
     scale,
@@ -89,10 +94,8 @@ pub async fn get_pixabay_image() {
     "LGTM",
   );
 
-  // 日付をファイル名にして画像を保存
-  let save_path = format!("generated/pixabay.jpg");
-
   // 画像を保存
+  let save_path = format!("generated/pixabay.jpg");
   image.save(save_path).unwrap();
 }
 
