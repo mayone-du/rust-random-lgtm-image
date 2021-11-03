@@ -106,3 +106,14 @@ fn rem_first_and_last(value: &str) -> &str {
   chars.next_back();
   chars.as_str()
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn remove_first_and_last_str() {
+    assert_eq!(rem_first_and_last("abcdefg"), "bcdef",);
+    assert_ne!(rem_first_and_last("abcdefg"), "abcdefg");
+  }
+}

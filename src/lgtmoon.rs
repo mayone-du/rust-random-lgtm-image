@@ -5,15 +5,15 @@ use std::io::Write;
 
 pub async fn get_lgtmoon_image() {
   let lgtmoon_base_url = "https://image.lgtmoon.dev/";
+
+  let range = 140_000..150_000;
   // ランダムな整数を生成して、それを画像のURLに結合する
-  let rand_num = rng::rand_num_gen(140_000..150_000);
+  let rand_num = rng::rand_num_gen(range);
   let req_url = format!("{}{}", lgtmoon_base_url, rand_num);
   println!("\nRequest url is {}\n", req_url);
   let res = match reqwest::get(req_url).await {
     Ok(response) => response,
-    Err(e) => {
-      panic!("LGTMOON Request Error! {}", e)
-    }
+    Err(e) => panic!("LGTMOON Request Error! {}", e),
   };
 
   // レスポンスのステータスコードを取得
