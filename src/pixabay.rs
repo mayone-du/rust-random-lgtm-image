@@ -11,10 +11,11 @@ pub async fn get_pixabay_image() {
   // .envの値を読み込む
   dotenv().ok();
   let pixabay_api_key = env::var("PIXABAY_API_KEY").unwrap();
+  let search_keyword = get_keyword_from_args();
 
   let pixabay_url = format!(
     "https://pixabay.com/api/?key={}&q={}&image_type=photo",
-    pixabay_api_key, "",
+    pixabay_api_key, search_keyword,
   );
   // PixabayAPIから画像検索結果を取得
   let pixabay_res_text = reqwest::get(pixabay_url)
@@ -107,6 +108,16 @@ fn rem_first_and_last(value: &str) -> &str {
   chars.as_str()
 }
 
+// コマンド実行時に引数があればそれを返し、なければ空文字を返す
+fn get_keyword_from_args() -> String {
+  let args: Vec<String> = env::args().collect();
+  if args.len() > 1 {
+    args[1].to_string()
+  } else {
+    "".to_string()
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -115,5 +126,16 @@ mod tests {
   fn remove_first_and_last_str() {
     assert_eq!(rem_first_and_last("abcdefg"), "bcdef",);
     assert_ne!(rem_first_and_last("abcdefg"), "abcdefg");
+  }
+
+  #[test]
+  fn get_keyword_from_args_test() {
+    let args: Vec<String> = env::args().collect();
+    println!("{:?}", args);
+    if args.len() > 1 {
+      assert_eq!(get_keyword_from_args(), args[1].to_string());
+    } else {
+      assert_eq!(get_keyword_from_args(), "".to_string());
+    }
   }
 }
